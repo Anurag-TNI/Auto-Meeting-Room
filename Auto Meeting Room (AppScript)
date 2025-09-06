@@ -2,7 +2,11 @@
 // CONFIGURATION VARIABLES (CHANGE THESE)
 // ====================================================================
 
+// Meeting Room Spreadsheet (made by Anurag) = "https://docs.google.com/spreadsheets/d/1H5qSAiGGGs5UQ2fxpWFlR4VCHnbvrwX5FZMOM-U9DWk/edit?usp=sharing"
+// Please make your own version by copying this, and changing the order of the rooms based on your preference.
+
 // The ID of the spreadsheet containing your meeting room list.
+// Change this by copying the ID of your spreadsheet. 
 const SHEET_ID = '1H5qSAiGGGs5UQ2fxpWFlR4VCHnbvrwX5FZMOM-U9DWk'; 
 
 // The name of the sheet containing your room list (e.g., 'Sheet1').
