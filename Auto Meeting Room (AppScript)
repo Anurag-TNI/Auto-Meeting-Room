@@ -1,0 +1,150 @@
+// ====================================================================
+// CONFIGURATION VARIABLES (CHANGE THESE)
+// ====================================================================
+
+// The ID of the spreadsheet containing your meeting room list.
+const SHEET_ID = '1H5qSAiGGGs5UQ2fxpWFlR4VCHnbvrwX5FZMOM-U9DWk'; 
+
+// The name of the sheet containing your room list (e.g., 'Sheet1').
+const SHEET_NAME = 'Sheet1';
+
+// How many days into the future should the script look for meetings to book?
+const DAYS_TO_LOOK_AHEAD = 2;
+
+// ====================================================================
+// MAIN FUNCTION (DO NOT EDIT BELOW THIS LINE)
+// ====================================================================
+
+function bookMeetingRooms() {
+  
+  Logger.log('Starting the room booking process.');
+
+  // 1. Get the list of meeting rooms from the spreadsheet.
+  const meetingRooms = getMeetingRoomsFromSheet();
+  if (meetingRooms.length === 0) {
+    Logger.log('No meeting rooms found in the spreadsheet. Please check the sheet name and data.');
+    return;
+  }
+  
+  // Create a Set of all meeting room emails for fast lookup.
+  const roomEmails = new Set(meetingRooms.map(room => room.email));
+
+  // 2. Get the calendar events for the specified timeframe.
+  const myCalendar = CalendarApp.getDefaultCalendar();
+  const startTime = new Date();
+  const endTime = new Date();
+  endTime.setDate(startTime.getDate() + DAYS_TO_LOOK_AHEAD);
+
+  const events = myCalendar.getEvents(startTime, endTime);
+  Logger.log(`Found ${events.length} events to check.`);
+
+  // 3. Process each event.
+  events.forEach(event => {
+    
+    // Check if you are the owner or if your attendance is accepted.
+    if (!event.isOwnedByMe() && event.getMyStatus() !== CalendarApp.GuestStatus.YES) {
+      Logger.log(`Skipping "${event.getTitle()}" as your attendance is not "Accepted" and you are not the owner.`);
+      return; 
+    }
+
+    const attendees = event.getGuestList();
+    const guestCount = attendees.length;
+    
+    // NEW: Check if a meeting room is already booked and has accepted the invite.
+    const hasBookedRoom = attendees.some(guest => {
+      const email = guest.getEmail();
+      // Check if the guest's email is in our list of meeting room emails.
+      if (roomEmails.has(email)) {
+        // If it is, now check if the meeting room has accepted.
+        if (guest.getGuestStatus() === CalendarApp.GuestStatus.YES) {
+          Logger.log(`Found an existing, accepted room (${email}) for "${event.getTitle()}".`);
+          return true; // Match found, so stop and return true.
+        }
+      }
+      return false;
+    });
+
+    if (hasBookedRoom) {
+      Logger.log(`Skipping "${event.getTitle()}" because a meeting room is already booked.`);
+      return;
+    }
+
+    Logger.log(`Checking event: "${event.getTitle()}" with ${guestCount} invitees.`);
+    
+    // Find a suitable and available room.
+    let roomBooked = false;
+    for (const room of meetingRooms) {
+      if (guestCount <= room.capacity) {
+        // Room capacity is sufficient. Now check if it's available.
+        const roomCalendar = CalendarApp.getCalendarById(room.email);
+        if (!roomCalendar) {
+            Logger.log(`-> ERROR: Could not find calendar for room "${room.name}" (${room.email}). Check the email ID and sharing permissions. Skipping this room.`);
+            continue;
+        }
+
+        const conflicts = roomCalendar.getEvents(event.getStartTime(), event.getEndTime());
+        
+        if (conflicts.length === 0) {
+          // Room is available. Book it!
+          event.addGuest(room.email);
+          Logger.log(`-> BOOKED: "${room.name}" for "${event.getTitle()}".`);
+          roomBooked = true;
+          break; // Stop looking for rooms for this event.
+        } else {
+          Logger.log(`-> CONFLICT: "${room.name}" is already booked.`);
+        }
+      }
+    }
+    
+    if (!roomBooked) {
+      Logger.log(`-> No suitable and available room found for "${event.getTitle()}".`);
+    }
+  });
+
+  Logger.log('Room booking process finished.');
+}
+
+/**
+ * Reads meeting room data from the configured spreadsheet.
+ * @returns {Array<Object>} An array of objects, where each object represents a room.
+ */
+function getMeetingRoomsFromSheet() {
+  try {
+    const spreadsheet = SpreadsheetApp.openById(SHEET_ID);
+    const sheet = spreadsheet.getSheetByName(SHEET_NAME);
+    const dataRange = sheet.getDataRange();
+    const values = dataRange.getValues();
+    
+    if (values.length < 2) {
+      Logger.log('Spreadsheet is empty or headers are missing.');
+      return [];
+    }
+
+    const headers = values[0];
+    const emailIndex = headers.indexOf('Email ID');
+    const nameIndex = headers.indexOf('Meeting Room Name');
+    const capacityIndex = headers.indexOf('Capacity');
+
+    if (emailIndex === -1 || nameIndex === -1 || capacityIndex === -1) {
+        Logger.log('Spreadsheet columns "Meeting Room Name", "Email ID", or "Capacity" not found.');
+        return [];
+    }
+
+    const rooms = [];
+    for (let i = 1; i < values.length; i++) {
+      const row = values[i];
+      if (row[emailIndex] && row[nameIndex] && row[capacityIndex]) {
+        rooms.push({
+          name: row[nameIndex],
+          email: row[emailIndex],
+          capacity: parseInt(row[capacityIndex], 10)
+        });
+      }
+    }
+    return rooms;
+
+  } catch (e) {
+    Logger.log(`Error reading spreadsheet: ${e.message}`);
+    return [];
+  }
+}Auto 
