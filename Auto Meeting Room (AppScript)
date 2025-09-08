@@ -9,6 +9,7 @@
  * 3. Find "Calendar API" in the list and click it.
  * 4. The default version should be v3. Click Add.
  */
+
 function addMeetingRoomsToMyCalendarList() {
   
   const roomCalendarIds = [
@@ -39,12 +40,16 @@ function addMeetingRoomsToMyCalendarList() {
   roomCalendarIds.forEach(id => {
     try {
       // Create a calendar entry object.
-      const resource = { id: id };
+      // The `selected: false` property is new.
+      const resource = {
+        id: id,
+        selected: false
+      };
       
       // Use the Calendar API to insert the calendar into your calendar list.
       Calendar.CalendarList.insert(resource);
       
-      Logger.log(`SUCCESS: Calendar with ID ${id} has been added.`);
+      Logger.log(`SUCCESS: Calendar with ID ${id} has been added and is unselected.`);
       
     } catch (e) {
       Logger.log(`ERROR: Could not add calendar with ID ${id}. Reason: ${e.message}`);
