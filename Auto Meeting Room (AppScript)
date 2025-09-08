@@ -1,19 +1,71 @@
 // ====================================================================
+// ADDITION OF GOOGLE CALENDARS
+// ====================================================================
+/**
+ * Adds a list of calendars to your "Other calendars" list. This requires enabling the Calendar API Advanced Service.
+ * Here's how to do enable the Calendar API Advanced Service:
+ * 1. Open your Apps Script project.
+ * 2. On the left-hand menu, click Services (the + icon).
+ * 3. Find "Calendar API" in the list and click it.
+ * 4. The default version should be v3. Click Add.
+ */
+function addMeetingRoomsToMyCalendarList() {
+  
+  const roomCalendarIds = [
+    'yap@thenudge.org',
+    'seva@thenudge.org',
+    'daan@thenudge.org',
+    'uttam.nagar@thenudge.org',
+    'webconf@thenudge.org',
+    'ka-21@thenudge.org',
+    'belathur@thenudge.org',
+    'lohardaga@thenudge.org',
+    'halcyon@thenudge.org',
+    'shakambarinagar@thenudge.org',
+    'c-9.hsr@thenudge.org',
+    'barabanki@thenudge.org',
+    'strike_15@thenudge.org',
+    'pb22@thenudge.org',
+    'bahraich@thenudge.org',
+    'cac@thenudge.org',
+    'banswara@thenudge.org',
+    'borobazar@thenudge.org',
+    'tumkur@thenudge.org',
+    'agri_lkigai@thenudge.org'
+  ];
+
+  Logger.log('Starting to add calendars to your list.');
+
+  roomCalendarIds.forEach(id => {
+    try {
+      // Create a calendar entry object.
+      const resource = { id: id };
+      
+      // Use the Calendar API to insert the calendar into your calendar list.
+      Calendar.CalendarList.insert(resource);
+      
+      Logger.log(`SUCCESS: Calendar with ID ${id} has been added.`);
+      
+    } catch (e) {
+      Logger.log(`ERROR: Could not add calendar with ID ${id}. Reason: ${e.message}`);
+    }
+  });
+
+  Logger.log('Process finished.');
+}
+
+// ====================================================================
 // CONFIGURATION VARIABLES (CHANGE THESE)
 // ====================================================================
 
-// Meeting Room Spreadsheet (made by Anurag) = "https://docs.google.com/spreadsheets/d/1H5qSAiGGGs5UQ2fxpWFlR4VCHnbvrwX5FZMOM-U9DWk/edit?usp=sharing"
-// Please make your own version by copying this, and changing the order of the rooms based on your preference.
-
 // The ID of the spreadsheet containing your meeting room list.
-// Change this by copying the ID of your spreadsheet. 
 const SHEET_ID = '1H5qSAiGGGs5UQ2fxpWFlR4VCHnbvrwX5FZMOM-U9DWk'; 
 
 // The name of the sheet containing your room list (e.g., 'Sheet1').
 const SHEET_NAME = 'Sheet1';
 
 // How many days into the future should the script look for meetings to book?
-const DAYS_TO_LOOK_AHEAD = 2;
+const DAYS_TO_LOOK_AHEAD = 1;
 
 // ====================================================================
 // MAIN FUNCTION (DO NOT EDIT BELOW THIS LINE)
@@ -151,4 +203,4 @@ function getMeetingRoomsFromSheet() {
     Logger.log(`Error reading spreadsheet: ${e.message}`);
     return [];
   }
-}Auto 
+}
